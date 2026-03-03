@@ -6,10 +6,12 @@ import { useNavigate } from "react-router-dom";
 function parseRequiredInt(label, raw) {
   const v = String(raw ?? "").trim();
   if (v === "") return { ok: false, msg: `${label}을(를) 입력하세요.` };
-  if (!/^\d+$/.test(v)) return { ok: false, msg: `${label}은(는) 숫자만 입력하세요.` };
+  if (!/^\d+$/.test(v))
+    return { ok: false, msg: `${label}은(는) 숫자만 입력하세요.` };
 
   const n = Number(v);
-  if (!Number.isSafeInteger(n)) return { ok: false, msg: `${label} 값이 올바르지 않습니다.` };
+  if (!Number.isSafeInteger(n))
+    return { ok: false, msg: `${label} 값이 올바르지 않습니다.` };
 
   return { ok: true, value: n };
 }
@@ -47,7 +49,9 @@ export default function MyProfileEdit() {
   if (!profile) {
     return (
       <div className="l-page">
-        <div className="u-alert u-alert--error">프로필을 불러올 수 없습니다.</div>
+        <div className="u-alert u-alert--error">
+          프로필을 불러올 수 없습니다.
+        </div>
       </div>
     );
   }
@@ -90,7 +94,8 @@ export default function MyProfileEdit() {
 
       if (updateError) throw updateError;
 
-      const to = profile.role === "teacher" ? "/teacher/profile" : "/student/profile";
+      const to =
+        profile.role === "teacher" ? "/teacher/profile" : "/student/profile";
       navigate(to, { replace: true });
     } catch (err) {
       setError(err?.message ?? String(err));
@@ -113,24 +118,19 @@ export default function MyProfileEdit() {
         >
           <div>
             <div style={{ fontSize: 18, fontWeight: 900 }}>내 정보 수정</div>
-            <div style={{ marginTop: 4, fontSize: 13, color: "var(--text-muted)" }}>
+            <div
+              style={{ marginTop: 4, fontSize: 13, color: "var(--text-muted)" }}
+            >
               이름, 기수, 행정반, 학번을 수정할 수 있습니다.
             </div>
           </div>
-
-          <button
-            type="button"
-            className="c-ctl c-btn"
-            onClick={() =>
-              navigate(profile.role === "teacher" ? "/teacher/profile" : "/student/profile")
-            }
-            disabled={saving}
-          >
-            취소
-          </button>
         </div>
 
-        <form onSubmit={onSubmit} className="l-section" style={{ marginTop: 12 }}>
+        <form
+          onSubmit={onSubmit}
+          className="l-section"
+          style={{ marginTop: 12 }}
+        >
           <div className="f-field">
             <div className="f-label">이름(A, B표시)</div>
             <input
@@ -179,13 +179,20 @@ export default function MyProfileEdit() {
             />
           </div>
 
-            <a style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              * 기수/행정반/학번은 숫자로 입력해야 합니다.
-            </a>
+          <a style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            * 기수/행정반/학번은 숫자로 입력해야 합니다.
+          </a>
 
           {error ? <div className="u-alert u-alert--error">{error}</div> : null}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
             <button type="submit" className="c-ctl c-btn" disabled={saving}>
               {saving ? "저장 중..." : "저장"}
             </button>
