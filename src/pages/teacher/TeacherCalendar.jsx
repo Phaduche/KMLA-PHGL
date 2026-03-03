@@ -508,38 +508,28 @@ function StudentSearch({ students, currentStudentId, onSelect }) {
   const q = trimmedKeyword.toLowerCase();
   if (!q) return [];
 
-  const isNumeric = /^\d+$/.test(q.replace("반", "")); // 숫자 위주의 검색어인지 확인
-  const pureDigit = q.replace(/[^0-9]/g, "");
-  const hasBan = q.includes("반");
-
   return students
     .map((s) => {
       const name = String(s.name ?? "").toLowerCase();
       const cls = String(s.class_no ?? "");
-      const no = String(s.student_no ?? "");
-      
       let score = 0;
 
-      // --- 1. 이름 가중치 (최우선) ---
-      if (name === q) score += 200; // 완전 일치
-      else if (name.startsWith(q)) score += 100; // 시작 부분이 일치 (예: '김' 입력 시 '김철수')
-      else if (name.includes(q)) score += 50; // 단순 포함
+      // 1. 이름 매칭 (문자열이 포함될 때만)
+      if (q && name.includes(q)) {
+        score += (name === q) ? 100 : 50;
+      }
 
-      // --- 2. 반 가중치 ---
-      if (hasBan && cls === pureDigit) score += 150; // "2반" 명시적 검색
-      else if (isNumeric && cls === pureDigit) score += 80; // 숫자만 쳤을 때 반 일치
-
-      // --- 3. 번호(학번) 가중치 ---
-      if (isNumeric && no === pureDigit) score += 70; // 번호 완전 일치
-      else if (no.includes(q)) score += 20;
+      // 2. 반 매칭 (숫자가 정확히 일치할 때만)
+      // q가 "2" 혹은 "2반"일 때 cls가 "2"인 경우
+      const pureDigit = q.replace(/[^0-9]/g, "");
+      if (pureDigit && cls === pureDigit) {
+        score += 70;
+      }
 
       return { ...s, score };
     })
-    .filter((s) => s.score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.name.localeCompare(b.name); // 점수 같으면 이름순 정렬
-    })
+    .filter((s) => s.score > 0) // 점수 없는 건 가차없이 버림
+    .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 }, [students, trimmedKeyword]);
 
