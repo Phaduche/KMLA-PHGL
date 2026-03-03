@@ -79,8 +79,9 @@ function buildSorter(sortKey, asc) {
 async function fetchStudents() {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, grade, class_no, student_no, role")
-    .eq("role", "student");
+    .select("id, approved, name, grade, class_no, student_no, role")
+    .eq("role", "student")
+    .eq("approved", true)
 
   if (error) throw error;
   return data ?? [];
