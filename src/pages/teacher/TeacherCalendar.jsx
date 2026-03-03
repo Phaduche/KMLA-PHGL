@@ -174,6 +174,8 @@ async function fetchStudents() {
     .select("id, name, grade, class_no, student_no, approved, role")
     .eq("role", "student")
     .eq("approved", true)
+    .eq("is_hidden", false)
+
 
   if (error) throw new Error(error.message);
   return data ?? [];

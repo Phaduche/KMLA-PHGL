@@ -241,6 +241,12 @@ AFTER INSERT OR UPDATE OR DELETE ON public.absences
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_audit_log();
 
+-- profiles에 audit 트리거 등록
+CREATE TRIGGER trg_profiles_audit
+AFTER INSERT OR UPDATE OR DELETE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_audit_log();
+
 -- =====================================================
 -- AUTH 연동
 -- =====================================================
@@ -309,12 +315,4 @@ WITH CHECK (student_id = auth.uid());
 
 CREATE POLICY absences_update
 ON public.absences FOR UPDATE
-USING (public.is_teacher());
-
--- =====================================================
--- AUDIT LOGS RLS
---   선생만 조회 가능, 직접 INSERT/UPDATE/DELETE 불가 (트리거만 가능)
--- =====================================================
-CREATE POLICY audit_logs_teacher_select
-ON public.audit_logs FOR SELECT
 USING (public.is_teacher());
