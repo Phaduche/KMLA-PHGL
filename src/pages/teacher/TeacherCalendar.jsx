@@ -158,8 +158,7 @@ const sortByStudentNo = (a, b) =>
 
 const sortByClass = (a, b) =>
   compareNullableNum(a.class_no, b.class_no) ||
-  compareNullableNum(a.student_no, b.student_no) ||
-  compareByName(a, b);
+  a.name.localeCompare(b.name, "ko");
 
 const SORT_FN = {
   [ORDER.STUDENT_NO]: sortByStudentNo,
