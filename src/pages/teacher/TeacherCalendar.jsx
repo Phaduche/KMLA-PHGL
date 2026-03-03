@@ -503,35 +503,41 @@ function OrderToggle({ order, onChange }) {
 function StudentSearch({ students, currentStudentId, onSelect }) {
   const [keyword, setKeyword] = useState("");
   const trimmedKeyword = keyword.trim();
-
   const filtered = useMemo(() => {
-  const q = trimmedKeyword.toLowerCase();
-  if (!q) return [];
+    const q = trimmedKeyword.toLowerCase();
+    if (!q) return [];
 
-  return students
-    .map((s) => {
-      const name = String(s.name ?? "").toLowerCase();
-      const cls = String(s.class_no ?? "");
-      let score = 0;
+    return students
+      .map((s) => {
+        const name = String(s.name ?? "").toLowerCase();
+        const cls = String(s.class_no ?? "");
+        let score = 0;
 
-      // 1. 이름 매칭 (문자열이 포함될 때만)
-      if (q && name.includes(q)) {
-        score += (name === q) ? 100 : 50;
-      }
+        // 1. 이름 매칭
+        if (q && name.includes(q)) {
+          score += name === q ? 100 : 50;
+        }
 
-      // 2. 반 매칭 (숫자가 정확히 일치할 때만)
-      // q가 "2" 혹은 "2반"일 때 cls가 "2"인 경우
-      const pureDigit = q.replace(/[^0-9]/g, "");
-      if (pureDigit && cls === pureDigit) {
-        score += 70;
-      }
+        // 2. 반 매칭
+        const pureDigit = q.replace(/[^0-9]/g, "");
+        if (pureDigit && cls === pureDigit) {
+          score += 70;
+        }
 
-      return { ...s, score };
-    })
-    .filter((s) => s.score > 0) // 점수 없는 건 가차없이 버림
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8);
-}, [students, trimmedKeyword]);
+        return { ...s, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => {
+        // 1차: 점수 내림차순
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        // 2차: 이름 가나다순
+        return a.name.localeCompare(b.name, "ko");
+      })
+      .slice(0, 8);
+  }, [students, trimmedKeyword]);
 
   return (
     <div className="f-field">
