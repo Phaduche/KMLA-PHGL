@@ -504,41 +504,41 @@ function StudentSearch({ students, currentStudentId, onSelect }) {
   const [keyword, setKeyword] = useState("");
   const trimmedKeyword = keyword.trim();
 
-  const filtered = useMemo(() => {
-    const q = trimmedKeyword.toLowerCase();
-    if (!q) return [];
+const filtered = useMemo(() => {
+  const q = trimmedKeyword.toLowerCase();
+  if (!q) return [];
 
-    // "2반" 입력 시 "2"만 추출하거나 "반"을 제거한 검색어 준비
-    const pureDigit = q.replace(/[^0-9]/g, ""); // 숫자만 추출 (2반 -> 2)
-    const hasBan = q.includes("반");
+  const pureDigit = q.replace(/[^0-9]/g, ""); // 숫자만 추출
+  const hasBan = q.includes("반");
 
-    return students
-      .map((s) => {
-        const name = String(s.name ?? "").toLowerCase();
-        const cls = String(s.class_no ?? "");
-        const no = String(s.student_no ?? "");
+  return students
+    .map((s) => {
+      const name = String(s.name ?? "").toLowerCase();
+      const cls = String(s.class_no ?? "");
+      const no = String(s.student_no ?? "");
+      
+      let score = 0;
 
-        let score = 0;
+      // [가중치 부여]
+      if (hasBan && cls === pureDigit) score += 100; // "2반" 검색 시 해당 반 학생
+      else if (cls === q || cls === pureDigit) score += 80; // "2" 검색 시 해당 반 학생
+      else if (name.includes(q)) score += 50; // 이름 포함
+      else if (no === q || no === pureDigit) score += 30; // 번호 일치
 
-        // 1. 반 우선순위 가중치
-        if (hasBan && cls === pureDigit)
-          score += 100; // "2반" 입력하고 반이 "2"일 때 (최우선)
-        else if (cls === q || cls === pureDigit) score += 80; // "2"만 입력해도 반이 일치하면 높은 점수
-
-        // 2. 이름 가중치
-        if (name === q) score += 90; // 이름이 정확히 일치
-        else if (name.includes(q)) score += 40;
-
-        // 3. 학번(번호) 가중치
-        if (no === q || no === pureDigit) score += 30; // 번호가 일치
-        else if (no.includes(q)) score += 10;
-
-        return { ...s, score };
-      })
-      .filter((s) => s.score > 0) // 연관성 있는 결과만 남김
-      .sort((a, b) => b.score - a.score) // 점수 높은 순으로 정렬
-      .slice(0, 8);
-  }, [students, trimmedKeyword]);
+      return { ...s, score };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => {
+      // 1순위: 가중치 점수가 높은 순 (정확도 높은 순)
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      // 2순위: 점수가 같다면 (예: 같은 2반 학생들끼리라면) 학번 낮은 순
+      // 숫자로 비교하기 위해 Number() 처리하거나 || 0 사용
+      return (Number(a.student_no) || 0) - (Number(b.student_no) || 0);
+    })
+    .slice(0, 8);
+}, [students, trimmedKeyword]);
 
   return (
     <div className="f-field">
