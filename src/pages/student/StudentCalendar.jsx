@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useMyProfile } from "../../hooks/useMyProfile";
 import { useNetworkStatus } from "../../hooks/useNetworkStatus";
+import { useCalendarView } from "../../lib/useCalendarView";
 import {
   addDays,
   formatKoreanMD,
@@ -17,6 +18,7 @@ const DOW = ["월", "화", "수", "목", "금", "토", "일"];
 const WEEK_LIMIT = { prev: 0, next: 21 }; // 이전 1주 / 이후 3주
 const TITLE_MAX = 50;
 const DESC_MAX = 200;
+const TODO_KEY_PREFIX = "phgl_student_todo_checked";
 
 const DEFAULT_DRAFT = {
   category: CATEGORIES[0],
@@ -257,6 +259,85 @@ function EventCard({ event, onDelete }) {
   );
 }
 
+function TodoItem({ event, checked, onToggle }) {
+  return (
+    <div
+      className="u-panel"
+      style={{
+        background: "var(--bg-2)",
+        padding: 12,
+        borderRadius: "var(--radius-2)",
+      }}
+    >
+      <div style={{ display: "flex", gap: 10 }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            cursor: "pointer",
+            flex: 1,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={() => onToggle(event.id)}
+            style={{ marginTop: 3 }}
+          />
+          <div
+            style={{
+              color: checked ? "var(--text-muted)" : "var(--text-1)",
+              textDecoration: checked ? "line-through" : "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                className="u-panel"
+                style={{
+                  borderRadius: 999,
+                  padding: "2px 8px",
+                  fontSize: 12,
+                  background: "var(--bg-1)",
+                  textDecoration: "none",
+                }}
+              >
+                {event.category}
+              </span>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {formatMinutesAsHM(event.duration_min)}
+              </span>
+            </div>
+
+            <div style={{ marginTop: 6, fontWeight: 900 }}>{event.title}</div>
+
+            {event.description && (
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "var(--text-muted)",
+                  fontSize: 13,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {event.description}
+              </div>
+            )}
+          </div>
+        </label>
+
+      </div>
+    </div>
+  );
+}
+
 function AddEventForm({ draft, onChange, onSubmit, onCancel, saving, error }) {
   return (
     <div className="l-section">
@@ -346,6 +427,7 @@ export default function StudentCalendar() {
   const { session, loading } = useMyProfile();
   const uid = session?.user?.id;
   const isOnline = useNetworkStatus();
+  const { viewMode } = useCalendarView();
 
   // ── 주 탐색 상태 ──
   const thisMonday = useMemo(() => startOfWeekMonday(new Date()), []);
@@ -406,6 +488,11 @@ export default function StudentCalendar() {
   );
 
   const selectedList = eventsByDate.get(selectedISO) ?? [];
+  const todoStorageKey = useMemo(
+    () => `${TODO_KEY_PREFIX}_${uid ?? "guest"}`,
+    [uid]
+  );
+  const [checkedMap, setCheckedMap] = useState({});
 
   // ── 주 이동 ──
   const navigateWeek = (offset) => {
@@ -417,6 +504,33 @@ export default function StudentCalendar() {
     setSelectedIdx(getTodayDowIndex());
     setWeekBase(startOfWeekMonday(new Date()));
   };
+
+  useEffect(() => {
+    const raw = localStorage.getItem(todoStorageKey);
+    if (!raw) {
+      setCheckedMap({});
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      setCheckedMap(parsed && typeof parsed === "object" ? parsed : {});
+    } catch {
+      setCheckedMap({});
+    }
+  }, [todoStorageKey]);
+
+  const toggleChecked = (eventId) => {
+    setCheckedMap((prev) => {
+      const next = { ...prev, [eventId]: !prev[eventId] };
+      localStorage.setItem(todoStorageKey, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const selectedDoneCount = useMemo(
+    () => selectedList.filter((ev) => checkedMap[ev.id]).length,
+    [selectedList, checkedMap]
+  );
 
   // ── 이벤트 추가 모달 상태 ──
   const [addOpen, setAddOpen] = useState(false);
@@ -663,9 +777,10 @@ export default function StudentCalendar() {
         >
           <div style={{ fontWeight: 900 }}>
             {DOW[selectedIdx]}요일 · {formatKoreanMD(selectedDate)}
+            {viewMode === "todo" ? ` · 완료 ${selectedDoneCount}/${selectedList.length}` : ""}
           </div>
           <button className="c-ctl c-btn" type="button" onClick={openAddModal}>
-            일정 추가
+            {viewMode === "todo" ? "할 일 추가" : "일정 추가"}
           </button>
         </div>
 
@@ -676,17 +791,26 @@ export default function StudentCalendar() {
             </div>
           ) : selectedList.length === 0 ? (
             <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              등록된 학습 없음
+              {viewMode === "todo" ? "체크할 할 일이 없음" : "등록된 학습 없음"}
             </div>
           ) : (
             <div className="l-section">
-              {selectedList.map((ev) => (
-                <EventCard
-                  key={ev.id}
-                  event={ev}
-                  onDelete={handleDeleteEvent}
-                />
-              ))}
+              {viewMode === "todo"
+                ? selectedList.map((ev) => (
+                    <TodoItem
+                      key={ev.id}
+                      event={ev}
+                      checked={Boolean(checkedMap[ev.id])}
+                      onToggle={toggleChecked}
+                    />
+                  ))
+                : selectedList.map((ev) => (
+                    <EventCard
+                      key={ev.id}
+                      event={ev}
+                      onDelete={handleDeleteEvent}
+                    />
+                  ))}
             </div>
           )}
         </div>
