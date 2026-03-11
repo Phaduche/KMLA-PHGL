@@ -320,7 +320,7 @@ function AddEventForm({ draft, onChange, onSubmit, onCancel, saving, error }) {
           className="c-ctl c-input"
           value={draft.title}
           onChange={(e) => onChange("title", e.target.value)}
-          placeholder="ex) 수학의 정석 1단원 연습문제"
+          placeholder="수학의 정석 1단원 연습문제"
           autoFocus
           maxLength={TITLE_MAX}
         />
@@ -348,7 +348,7 @@ function AddEventForm({ draft, onChange, onSubmit, onCancel, saving, error }) {
           className="c-ctl c-textarea"
           value={draft.description}
           onChange={(e) => onChange("description", e.target.value)}
-          placeholder="ex) 수학의 정석 연습문제 1-1 ~ 1-10"
+          placeholder="수학의 정석 연습문제 1-1 ~ 1-10"
           rows={3}
           maxLength={DESC_MAX}
         />
